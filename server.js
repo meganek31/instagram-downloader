@@ -1,14 +1,21 @@
 const http = require('http');
+const url = require('url');
 const instagramUrlDirect = require('instagram-url-direct');
 
-http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-
-  if (url.pathname === '/indir' && url.searchParams.has('url')) {
-    instagramUrlDirect(url.searchParams.get('url'))
+const server = http.createServer((req, res) => {
+  const parsedUrl = url.parse(req.url, true);
+  
+  if (parsedUrl.pathname === '/indir' && parsedUrl.query.url) {
+    const instagramUrl = parsedUrl.query.url;
+    
+    instagramUrlDirect(instagramUrl)
       .then(result => {
-        if (result?.url_list?.[0]) {
-          res.writeHead(302, { 'Location': result.url_list[0] });
+        if (result && result.url_list && result.url_list.length > 0) {
+          const videoUrl = result.url_list[0];
+          
+          // Video URL'sine yönlendir
+          res.writeHead(302, { 'Location': videoUrl });
+          res.end();
         } else {
           res.writeHead(404, { 'Content-Type': 'text/plain' });
           res.end('Video bulunamadı');
@@ -23,4 +30,9 @@ http.createServer((req, res) => {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Sayfa bulunamadı');
   }
-}).listen(3000, () => console.log('Sunucu http://localhost:3000 adresinde çalışıyor'));
+});
+
+const PORT = 3000;
+server.listen(PORT, () => {
+  console.log(`Sunucu http://localhost:${PORT} adresinde çalışıyor`);
+});
